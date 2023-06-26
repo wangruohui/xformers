@@ -20,7 +20,12 @@ to create some state of the art models.
    :maxdepth: 2
    :caption: Components Documentation
 
-   components/index
+   components/ops
+   components/attentions
+   components/feedforward
+   components/position_embedding
+   components/reversible
+   components/mha
 
 |
 |
@@ -29,7 +34,15 @@ to create some state of the art models.
    :maxdepth: 2
    :caption: Tutorials and examples
 
-   tutorials/index
+   tutorials/sparse_vit
+   tutorials/blocksparse
+   tutorials/aotautograd_nvfuser
+   tutorials/extend_attentions
+   tutorials/use_attention
+   tutorials/pytorch_encoder
+   tutorials/reversible
+   tutorials/triton
+   tutorials/hierarchical
 
 |
 |
