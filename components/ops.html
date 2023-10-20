@@ -13,7 +13,7 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>xFormers optimized operators | xFormers 0.0.21 documentation</title>
+  <title>xFormers optimized operators | xFormers 0.0.23 documentation</title>
   
   <script src="../_static/js/ga.js"></script>
   <script src="../_static/js/redirect.js"></script>
@@ -23,7 +23,7 @@
   
   <link rel="canonical" href="https://facebookresearch.github.io/xformerscomponents/ops.html" />
   
-  <meta property="og:title" content="xFormers optimized operators | xFormers 0.0.21 documentation">
+  <meta property="og:title" content="xFormers optimized operators | xFormers 0.0.23 documentation">
   <meta name="description" content="API docs for xFormers. xFormers is a PyTorch extension library for composable and optimized Transformer blocks.">
   <meta property="og:description" content="API docs for xFormers. xFormers is a PyTorch extension library for composable and optimized Transformer blocks.">
   <!--<meta property="og:image" content="https://mmf.sh/img/logo.png">-->
@@ -149,23 +149,14 @@
 <li class="toctree-l1"><a class="reference internal" href="reversible.html">Reversible layer</a></li>
 <li class="toctree-l1"><a class="reference internal" href="mha.html">Multi Head Attention</a></li>
 </ul>
-<p class="caption" role="heading"><span class="caption-text">Build models and blocks programatically</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../factory/block.html">Block factory</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../factory/model.html">Model factory</a></li>
-</ul>
 <p class="caption" role="heading"><span class="caption-text">Tutorials and examples</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../tutorials/sparse_vit.html">Replace all attentions from an existing ViT model with a sparse equivalent?</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../tutorials/blocksparse.html">Using BlockSparseAttention</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../tutorials/aotautograd_nvfuser.html">How to Enable Fused Operations Using AOTAutograd and NVFuser</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../tutorials/extend_attentions.html">Extend the xFormers parts zoo</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../tutorials/use_attention.html">I’m only interested in testing out the attention mechanisms that are hosted here</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../tutorials/pytorch_encoder.html">Building an encoder, comparing to PyTorch</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../tutorials/pytorch_encoder.html#building-full-models">Building full models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../tutorials/reversible.html">Using the Reversible block</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../tutorials/triton.html">Using Triton-based layers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../tutorials/hierarchical.html">Hierarchical Transformers</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Some custom parts</span></p>
 <ul>
@@ -258,6 +249,7 @@
 <ul class="simple">
 <li><p>Input tensors must be in format <code class="docutils literal notranslate"><span class="pre">[B,</span> <span class="pre">M,</span> <span class="pre">H,</span> <span class="pre">K]</span></code>, where B is the batch size, M         the sequence length, H the number of heads, and K the embeding size per head</p></li>
 <li><p>If inputs have dimension 3, it is assumed that the dimensions are <code class="docutils literal notranslate"><span class="pre">[B,</span> <span class="pre">M,</span> <span class="pre">K]</span></code> and <code class="docutils literal notranslate"><span class="pre">H=1</span></code></p></li>
+<li><p>Inputs can also be of dimension 5 with GQA - see note below</p></li>
 <li><p>Inputs can be non-contiguous - we only require the last dimension’s stride to be 1</p></li>
 </ul>
 <dl class="field-list simple">
@@ -293,18 +285,46 @@
 <span class="p">)</span>
 </pre></div>
 </div>
-<dl class="field-list simple">
+<dl class="field-list">
 <dt class="field-odd">Supported hardware</dt>
 <dd class="field-odd"><p>NVIDIA GPUs with compute capability above 6.0 (P100+), datatype <code class="docutils literal notranslate"><span class="pre">f16</span></code>, <code class="docutils literal notranslate"><span class="pre">bf16</span></code> and <code class="docutils literal notranslate"><span class="pre">f32</span></code>.</p>
 </dd>
-<dt class="field-even">Raises</dt>
-<dd class="field-even"><ul class="simple">
+<dt class="field-even">EXPERIMENTAL</dt>
+<dd class="field-even"><p>Using with Multi Query Attention (MQA) and Grouped Query Attention (GQA):</p>
+<p>MQA/GQA is an experimental feature supported only for the forward pass.
+If you have 16 heads in query, and 2 in key/value, you can provide 5-dim tensors
+in the <code class="docutils literal notranslate"><span class="pre">[B,</span> <span class="pre">M,</span> <span class="pre">G,</span> <span class="pre">H,</span> <span class="pre">K]</span></code> format, where <code class="docutils literal notranslate"><span class="pre">G</span></code> is the number of head groups (here 2), and
+<code class="docutils literal notranslate"><span class="pre">H</span></code> is the number of heads per group (8 in the example).</p>
+<p>Please note that xFormers will not automatically broadcast the inputs, so you will need
+to broadcast it manually before calling <cite>memory_efficient_attention</cite>.</p>
+</dd>
+<dt class="field-odd">GQA/MQA example</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">xformers.ops</span> <span class="k">as</span> <span class="nn">xops</span>
+
+<span class="n">B</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">K</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">128</span>
+<span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">)</span>
+<span class="n">q</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">([</span><span class="n">B</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="n">K</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<span class="n">k</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">([</span><span class="n">B</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">K</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<span class="n">v</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">([</span><span class="n">B</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">K</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<span class="n">out_gqa</span> <span class="o">=</span> <span class="n">xops</span><span class="o">.</span><span class="n">memory_efficient_attention</span><span class="p">(</span>
+    <span class="n">q</span><span class="o">.</span><span class="n">reshape</span><span class="p">([</span><span class="n">B</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">K</span><span class="p">]),</span>
+    <span class="n">k</span><span class="o">.</span><span class="n">reshape</span><span class="p">([</span><span class="n">B</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">K</span><span class="p">])</span><span class="o">.</span><span class="n">expand</span><span class="p">([</span><span class="n">B</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">K</span><span class="p">]),</span>
+    <span class="n">v</span><span class="o">.</span><span class="n">reshape</span><span class="p">([</span><span class="n">B</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">K</span><span class="p">])</span><span class="o">.</span><span class="n">expand</span><span class="p">([</span><span class="n">B</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">K</span><span class="p">]),</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><ul class="simple">
 <li><p><a class="reference external" href="https://docs.python.org/3.6/library/exceptions.html#NotImplementedError" title="(in Python v3.6)"><strong>NotImplementedError</strong></a> – if there is no operator available to compute the MHA</p></li>
 <li><p><a class="reference external" href="https://docs.python.org/3.6/library/exceptions.html#ValueError" title="(in Python v3.6)"><strong>ValueError</strong></a> – if inputs are invalid</p></li>
 </ul>
 </dd>
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><ul class="simple">
 <li><p><strong>query</strong> – Tensor of shape <code class="docutils literal notranslate"><span class="pre">[B,</span> <span class="pre">Mq,</span> <span class="pre">H,</span> <span class="pre">K]</span></code></p></li>
 <li><p><strong>key</strong> – Tensor of shape <code class="docutils literal notranslate"><span class="pre">[B,</span> <span class="pre">Mkv,</span> <span class="pre">H,</span> <span class="pre">K]</span></code></p></li>
 <li><p><strong>value</strong> – Tensor of shape <code class="docutils literal notranslate"><span class="pre">[B,</span> <span class="pre">Mkv,</span> <span class="pre">H,</span> <span class="pre">Kv]</span></code></p></li>
@@ -314,8 +334,8 @@
 <li><p><strong>op</strong> – The operators to use - see <a class="reference internal" href="#xformers.ops.AttentionOpBase" title="xformers.ops.AttentionOpBase"><code class="xref py py-attr docutils literal notranslate"><span class="pre">xformers.ops.AttentionOpBase</span></code></a>.         If set to <code class="docutils literal notranslate"><span class="pre">None</span></code> (recommended), xFormers         will dispatch to the best available operator, depending on the inputs         and options.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>multi-head attention Tensor with shape <code class="docutils literal notranslate"><span class="pre">[B,</span> <span class="pre">Mq,</span> <span class="pre">H,</span> <span class="pre">Kv]</span></code></p>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>multi-head attention Tensor with shape <code class="docutils literal notranslate"><span class="pre">[B,</span> <span class="pre">Mq,</span> <span class="pre">H,</span> <span class="pre">Kv]</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -629,6 +649,18 @@ along with <cite>tensors</cite> concatenated on the sequence length dimension, w
 <dd><p>Makes each block causal with a possible non-causal prefix</p>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="xformers.ops.fmha.attn_bias.BlockDiagonalMask.make_local_attention">
+<span class="sig-name descname"><span class="pre">make_local_attention</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">window_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#int" title="(in Python v3.6)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#xformers.ops.fmha.attn_bias.BlockDiagonalCausalLocalAttentionMask" title="xformers.ops.fmha.attn_bias.BlockDiagonalCausalLocalAttentionMask"><span class="pre">BlockDiagonalCausalLocalAttentionMask</span></a></span></span><a class="reference internal" href="../_modules/xformers/ops/fmha/attn_bias.html#BlockDiagonalMask.make_local_attention"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#xformers.ops.fmha.attn_bias.BlockDiagonalMask.make_local_attention" title="Permalink to this definition">¶</a></dt>
+<dd><p>Experimental: Makes each block causal with local attention</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="xformers.ops.fmha.attn_bias.BlockDiagonalMask.make_local_attention_from_bottomright">
+<span class="sig-name descname"><span class="pre">make_local_attention_from_bottomright</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">window_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#int" title="(in Python v3.6)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#xformers.ops.fmha.attn_bias.BlockDiagonalCausalLocalAttentionFromBottomRightMask" title="xformers.ops.fmha.attn_bias.BlockDiagonalCausalLocalAttentionFromBottomRightMask"><span class="pre">BlockDiagonalCausalLocalAttentionFromBottomRightMask</span></a></span></span><a class="reference internal" href="../_modules/xformers/ops/fmha/attn_bias.html#BlockDiagonalMask.make_local_attention_from_bottomright"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#xformers.ops.fmha.attn_bias.BlockDiagonalMask.make_local_attention_from_bottomright" title="Permalink to this definition">¶</a></dt>
+<dd><p>Experimental: Makes each block causal with local attention, start from bottom right</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -699,6 +731,28 @@ lengths for query and key/value.</p>
 </dl>
 </dd></dl>
 
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="xformers.ops.fmha.attn_bias.BlockDiagonalCausalLocalAttentionMask">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">xformers.ops.fmha.attn_bias.</span></span><span class="sig-name descname"><span class="pre">BlockDiagonalCausalLocalAttentionMask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">q_seqinfo</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">_SeqLenInfo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_seqinfo</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">_SeqLenInfo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_batch_sizes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Optional" title="(in Python v3.6)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Sequence" title="(in Python v3.6)"><span class="pre">Sequence</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#int" title="(in Python v3.6)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_window_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#int" title="(in Python v3.6)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/xformers/ops/fmha/attn_bias.html#BlockDiagonalCausalLocalAttentionMask"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#xformers.ops.fmha.attn_bias.BlockDiagonalCausalLocalAttentionMask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#xformers.ops.fmha.attn_bias.BlockDiagonalCausalMask" title="xformers.ops.fmha.attn_bias.BlockDiagonalCausalMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">BlockDiagonalCausalMask</span></code></a></p>
+<p>(Experimental feature)
+Same as <a class="reference internal" href="#xformers.ops.fmha.attn_bias.BlockDiagonalCausalMask" title="xformers.ops.fmha.attn_bias.BlockDiagonalCausalMask"><code class="xref py py-attr docutils literal notranslate"><span class="pre">xformers.ops.fmha.attn_bias.BlockDiagonalCausalMask</span></code></a>.
+This makes the mask “local” and the attention pattern banded.</p>
+<p>Query i only attends to keys in its block and cannot attend keys further than “window_size”
+from it.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="xformers.ops.fmha.attn_bias.BlockDiagonalCausalLocalAttentionFromBottomRightMask">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">xformers.ops.fmha.attn_bias.</span></span><span class="sig-name descname"><span class="pre">BlockDiagonalCausalLocalAttentionFromBottomRightMask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">q_seqinfo</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">_SeqLenInfo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_seqinfo</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">_SeqLenInfo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_batch_sizes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Optional" title="(in Python v3.6)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Sequence" title="(in Python v3.6)"><span class="pre">Sequence</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#int" title="(in Python v3.6)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_window_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#int" title="(in Python v3.6)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/xformers/ops/fmha/attn_bias.html#BlockDiagonalCausalLocalAttentionFromBottomRightMask"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#xformers.ops.fmha.attn_bias.BlockDiagonalCausalLocalAttentionFromBottomRightMask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#xformers.ops.fmha.attn_bias.BlockDiagonalCausalFromBottomRightMask" title="xformers.ops.fmha.attn_bias.BlockDiagonalCausalFromBottomRightMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">BlockDiagonalCausalFromBottomRightMask</span></code></a></p>
+<p>(Experimental feature)
+Same as <a class="reference internal" href="#xformers.ops.fmha.attn_bias.BlockDiagonalCausalMask" title="xformers.ops.fmha.attn_bias.BlockDiagonalCausalMask"><code class="xref py py-attr docutils literal notranslate"><span class="pre">xformers.ops.fmha.attn_bias.BlockDiagonalCausalMask</span></code></a>.
+This makes the mask “local” and the attention pattern banded.</p>
+<p>Query i only attends to keys in its block and cannot attend keys further than “window_size”
+from it.</p>
 </dd></dl>
 
 </section>

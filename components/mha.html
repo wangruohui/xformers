@@ -13,7 +13,7 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Multi Head Attention | xFormers 0.0.21 documentation</title>
+  <title>Multi Head Attention | xFormers 0.0.23 documentation</title>
   
   <script src="../_static/js/ga.js"></script>
   <script src="../_static/js/redirect.js"></script>
@@ -23,7 +23,7 @@
   
   <link rel="canonical" href="https://facebookresearch.github.io/xformerscomponents/mha.html" />
   
-  <meta property="og:title" content="Multi Head Attention | xFormers 0.0.21 documentation">
+  <meta property="og:title" content="Multi Head Attention | xFormers 0.0.23 documentation">
   <meta name="description" content="API docs for xFormers. xFormers is a PyTorch extension library for composable and optimized Transformer blocks.">
   <meta property="og:description" content="API docs for xFormers. xFormers is a PyTorch extension library for composable and optimized Transformer blocks.">
   <!--<meta property="og:image" content="https://mmf.sh/img/logo.png">-->
@@ -43,7 +43,7 @@
   <link rel="stylesheet" href="../_static/css/customize.css" type="text/css" />
   <link rel="index" title="Index" href="../genindex.html" />
   <link rel="search" title="Search" href="../search.html" />
-  <link rel="next" title="Block factory" href="../factory/block.html" />
+  <link rel="next" title="Replace all attentions from an existing ViT model with a sparse equivalent?" href="../tutorials/sparse_vit.html" />
   <link rel="prev" title="Reversible layer" href="reversible.html" /> 
 
   
@@ -149,23 +149,14 @@
 <li class="toctree-l1"><a class="reference internal" href="reversible.html">Reversible layer</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Multi Head Attention</a></li>
 </ul>
-<p class="caption" role="heading"><span class="caption-text">Build models and blocks programatically</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../factory/block.html">Block factory</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../factory/model.html">Model factory</a></li>
-</ul>
 <p class="caption" role="heading"><span class="caption-text">Tutorials and examples</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../tutorials/sparse_vit.html">Replace all attentions from an existing ViT model with a sparse equivalent?</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../tutorials/blocksparse.html">Using BlockSparseAttention</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../tutorials/aotautograd_nvfuser.html">How to Enable Fused Operations Using AOTAutograd and NVFuser</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../tutorials/extend_attentions.html">Extend the xFormers parts zoo</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../tutorials/use_attention.html">I’m only interested in testing out the attention mechanisms that are hosted here</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../tutorials/pytorch_encoder.html">Building an encoder, comparing to PyTorch</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../tutorials/pytorch_encoder.html#building-full-models">Building full models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../tutorials/reversible.html">Using the Reversible block</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../tutorials/triton.html">Using Triton-based layers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../tutorials/hierarchical.html">Hierarchical Transformers</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Some custom parts</span></p>
 <ul>
@@ -298,7 +289,7 @@ Output dimensions are [batch size, sequence length, embed dim]</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../factory/block.html" class="btn btn-neutral float-right" title="Block factory" accesskey="n" rel="next">Next <img src="../_static/images/chevron-right-orange.svg" class="next-page"></a>
+        <a href="../tutorials/sparse_vit.html" class="btn btn-neutral float-right" title="Replace all attentions from an existing ViT model with a sparse equivalent?" accesskey="n" rel="next">Next <img src="../_static/images/chevron-right-orange.svg" class="next-page"></a>
       
       
         <a href="reversible.html" class="btn btn-neutral" title="Reversible layer" accesskey="p" rel="prev"><img src="../_static/images/chevron-right-orange.svg" class="previous-page"> Previous</a>

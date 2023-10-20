@@ -12,7 +12,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>xformers.ops.fmha | xFormers 0.0.21 documentation</title>
+  <title>xformers.ops.fmha | xFormers 0.0.23 documentation</title>
   
   <script src="../../../_static/js/ga.js"></script>
   <script src="../../../_static/js/redirect.js"></script>
@@ -22,7 +22,7 @@
   
   <link rel="canonical" href="https://facebookresearch.github.io/xformers_modules/xformers/ops/fmha.html" />
   
-  <meta property="og:title" content="xformers.ops.fmha | xFormers 0.0.21 documentation">
+  <meta property="og:title" content="xformers.ops.fmha | xFormers 0.0.23 documentation">
   <meta name="description" content="API docs for xFormers. xFormers is a PyTorch extension library for composable and optimized Transformer blocks.">
   <meta property="og:description" content="API docs for xFormers. xFormers is a PyTorch extension library for composable and optimized Transformer blocks.">
   <!--<meta property="og:image" content="https://mmf.sh/img/logo.png">-->
@@ -146,23 +146,14 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../components/reversible.html">Reversible layer</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../components/mha.html">Multi Head Attention</a></li>
 </ul>
-<p class="caption" role="heading"><span class="caption-text">Build models and blocks programatically</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../factory/block.html">Block factory</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../factory/model.html">Model factory</a></li>
-</ul>
 <p class="caption" role="heading"><span class="caption-text">Tutorials and examples</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../tutorials/sparse_vit.html">Replace all attentions from an existing ViT model with a sparse equivalent?</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../tutorials/blocksparse.html">Using BlockSparseAttention</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/aotautograd_nvfuser.html">How to Enable Fused Operations Using AOTAutograd and NVFuser</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../tutorials/extend_attentions.html">Extend the xFormers parts zoo</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../tutorials/use_attention.html">I’m only interested in testing out the attention mechanisms that are hosted here</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/pytorch_encoder.html">Building an encoder, comparing to PyTorch</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/pytorch_encoder.html#building-full-models">Building full models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../tutorials/reversible.html">Using the Reversible block</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../tutorials/triton.html">Using Triton-based layers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/hierarchical.html">Hierarchical Transformers</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Some custom parts</span></p>
 <ul>
@@ -247,7 +238,7 @@
 
 <span class="kn">import</span> <span class="nn">torch</span>
 
-<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">cutlass</span><span class="p">,</span> <span class="n">decoder</span><span class="p">,</span> <span class="n">flash</span><span class="p">,</span> <span class="n">small_k</span><span class="p">,</span> <span class="n">triton</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">cutlass</span><span class="p">,</span> <span class="n">decoder</span><span class="p">,</span> <span class="n">flash</span><span class="p">,</span> <span class="n">small_k</span><span class="p">,</span> <span class="n">triton</span><span class="p">,</span> <span class="n">triton_splitk</span>
 <span class="kn">from</span> <span class="nn">.attn_bias</span> <span class="kn">import</span> <span class="n">AttentionBias</span><span class="p">,</span> <span class="n">BlockDiagonalMask</span><span class="p">,</span> <span class="n">LowerTriangularMask</span>
 <span class="kn">from</span> <span class="nn">.common</span> <span class="kn">import</span> <span class="p">(</span>
     <span class="n">AttentionBwOpBase</span><span class="p">,</span>
@@ -373,6 +364,8 @@
 
 <span class="sd">    - If inputs have dimension 3, it is assumed that the dimensions are ``[B, M, K]`` and ``H=1``</span>
 
+<span class="sd">    - Inputs can also be of dimension 5 with GQA - see note below</span>
+
 <span class="sd">    - Inputs can be non-contiguous - we only require the last dimension&#39;s stride to be 1</span>
 
 
@@ -410,6 +403,34 @@
 <span class="sd">    :Supported hardware:</span>
 
 <span class="sd">        NVIDIA GPUs with compute capability above 6.0 (P100+), datatype ``f16``, ``bf16`` and ``f32``.</span>
+
+<span class="sd">    :EXPERIMENTAL: Using with Multi Query Attention (MQA) and Grouped Query Attention (GQA):</span>
+
+<span class="sd">        MQA/GQA is an experimental feature supported only for the forward pass.</span>
+<span class="sd">        If you have 16 heads in query, and 2 in key/value, you can provide 5-dim tensors</span>
+<span class="sd">        in the ``[B, M, G, H, K]`` format, where ``G`` is the number of head groups (here 2), and</span>
+<span class="sd">        ``H`` is the number of heads per group (8 in the example).</span>
+
+<span class="sd">        Please note that xFormers will not automatically broadcast the inputs, so you will need</span>
+<span class="sd">        to broadcast it manually before calling `memory_efficient_attention`.</span>
+
+<span class="sd">    :GQA/MQA example:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        import torch</span>
+<span class="sd">        import xformers.ops as xops</span>
+
+<span class="sd">        B, M, K = 3, 32, 128</span>
+<span class="sd">        kwargs = dict(device=&quot;cuda&quot;, dtype=torch.float16)</span>
+<span class="sd">        q = torch.randn([B, M, 8, K], **kwargs)</span>
+<span class="sd">        k = torch.randn([B, M, 2, K], **kwargs)</span>
+<span class="sd">        v = torch.randn([B, M, 2, K], **kwargs)</span>
+<span class="sd">        out_gqa = xops.memory_efficient_attention(</span>
+<span class="sd">            q.reshape([B, M, 2, 4, K]),</span>
+<span class="sd">            k.reshape([B, M, 2, 1, K]).expand([B, M, 2, 4, K]),</span>
+<span class="sd">            v.reshape([B, M, 2, 1, K]).expand([B, M, 2, 4, K]),</span>
+<span class="sd">        )</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        NotImplementedError: if there is no operator available to compute the MHA</span>
@@ -629,6 +650,7 @@
     <span class="n">flash</span><span class="o">.</span><span class="n">FwOp</span><span class="p">,</span>
     <span class="n">triton</span><span class="o">.</span><span class="n">FwOp</span><span class="p">,</span>
     <span class="n">small_k</span><span class="o">.</span><span class="n">FwOp</span><span class="p">,</span>
+    <span class="n">triton_splitk</span><span class="o">.</span><span class="n">FwOp</span><span class="p">,</span>
 <span class="p">]</span>
 
 <span class="n">ALL_BW_OPS</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">AttentionBwOpBase</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[</span>
