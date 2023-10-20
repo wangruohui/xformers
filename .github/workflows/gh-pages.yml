@@ -3,8 +3,11 @@ name: Build & deploy documentation
 on:
   push:
     branches:
-      - main
+      - docs
   pull_request:
+
+permissions:
+  contents: write
 
 jobs:
   deploy:

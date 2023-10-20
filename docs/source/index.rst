@@ -2,6 +2,8 @@
 Welcome to xFormers's documentation!
 =====================================
 
+(This fork increases level of verbosity of the sidebar)
+
 *xFormers* is a PyTorch based library which hosts flexible Transformers parts.
 They are interoperable and optimized building blocks, which can be optionally be combined
 to create some state of the art models.
@@ -20,7 +22,12 @@ to create some state of the art models.
    :maxdepth: 2
    :caption: Components Documentation
 
-   components/index
+   components/ops
+   components/attentions
+   components/feedforward
+   components/position_embedding
+   components/reversible
+   components/mha
 
 |
 |
@@ -29,7 +36,15 @@ to create some state of the art models.
    :maxdepth: 2
    :caption: Tutorials and examples
 
-   tutorials/index
+   tutorials/sparse_vit
+   tutorials/blocksparse
+   tutorials/aotautograd_nvfuser
+   tutorials/extend_attentions
+   tutorials/use_attention
+   tutorials/pytorch_encoder
+   tutorials/reversible
+   tutorials/triton
+   tutorials/hierarchical
 
 |
 |
