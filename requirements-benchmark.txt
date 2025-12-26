@@ -3,8 +3,8 @@
 
 # Example requirement, can be anything that pip knows
 # install with `pip install -r requirements.txt`, and make sure that CI does the same
-scikit-learn == 0.24.1
-tqdm == 4.59.0
+scikit-learn == 1.5.0
+tqdm == 4.66.3
 pandas == 1.2.4
 seaborn == 0.11.1
 pytorch-lightning >= 1.3
